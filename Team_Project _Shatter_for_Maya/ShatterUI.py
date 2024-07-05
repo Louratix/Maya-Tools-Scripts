@@ -78,13 +78,17 @@ class ShatterUI (QtWidgets.QWidget):
         layout.addWidget(self.ToggleXRBTN,2,3)
 
         self.DeformSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.DeformLabel = QtWidgets.QLabel("Deformation Value 0")
+        self.DeformLabel = QtWidgets.QLabel("Deform Value 1")
+        self.DeformSlider.setMinimum(1)
+        self.DeformSlider.setMaximum(100)
         layout.addWidget(self.DeformLabel,3,1)
         layout.addWidget(self.DeformSlider,3,2,1,2)
         self.DeformSlider.valueChanged.connect(self.update_Deform)
 
         self.SubSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.SubLabel = QtWidgets.QLabel("Subdivision Value 0")
+        self.SubLabel = QtWidgets.QLabel("Subdiv Value 1")
+        self.SubSlider.setMinimum(1)
+        self.SubSlider.setMaximum(10)
         layout.addWidget(self.SubLabel,4,1)
         layout.addWidget(self.SubSlider,4,2,1,2)
         self.SubSlider.valueChanged.connect(self.update_Sub)
@@ -114,11 +118,13 @@ class ShatterUI (QtWidgets.QWidget):
     """Updating the Sliders"""
     def update_Sub(self):
         value = self.SubSlider.value()
-        self.SubLabel.setText(f"Subdivision Value: {value}")
+        self.SubLabel.setText(f"Subdiv Value: {value}")
+        self.Subdivise(value)
 
     def update_Deform(self):
         value = self.DeformSlider.value()
-        self.DeformLabel.setText(f"Deformation Value: {value}")
+        self.DeformLabel.setText(f"Deform Value: {value}")
+        
 
 
     def toggle(self):       
@@ -156,20 +162,49 @@ class ShatterUI (QtWidgets.QWidget):
     def Copy(self):
         print("test Copy")
 
+    """Deletes Selected Cutting Meshes"""
     def Delete(self):
-        print("test Delete")
+        select = self.GetMesh()
+        count = 0
+        for items in select:
+            ToDelete = select[count]
+            if ToDelete in self.CutMesh:
+                self.CutMesh.remove(ToDelete)
+                print(ToDelete + " is Deleted")
+            count = count + 1
+        cmds.delete()
+
 
     def cut(self):
         print('test')
+    """add subdivision to selected Cutting Mesh"""
+
+    def Subdivise(self,Subdivisions):
+        selected = cmds.ls(selection = True)
+        print(selected)
+        selectedSTR = selected[0]
+        #cmds.polySubdivideFacet( selected, dv=Subdivisions )
+        if 'Cube' in selected[0]:
+            cmds.setAttr( "polyCube" + selectedSTR[-1] + ".subdivisionsWidth", Subdivisions)
+            cmds.setAttr( "polyCube" + selectedSTR[-1] + ".subdivisionsDepth", Subdivisions)
+        else:
+            cmds.setAttr( "polySphere" + selectedSTR[-1] + ".subdivisionsHeight", Subdivisions)
+
+
 
     """Add a plane to cut into the mesh"""
     def AddPlane(self):
         plane = cmds.polyCube( w=1,sx=1, sy=1, sz=1, h=0.01)
-        self.CutMesh.append(plane)
+        self.CutMesh.append(plane[0])
         print (self.CutMesh)
 
     def AddSphere(self):
-        cmds.polySphere( sx=10, sy=10, r=1)
+        sphere = cmds.polySphere( sx=10, sy=10, r=1)
+        self.CutMesh.append(sphere[0])
+        print (self.CutMesh)
+        cmds.polyExtrudeFacet (sphere, tk = 0.01)
+        cmds.select(sphere)
+
 
     """Toggles XR View ON or OFF"""
     def ToggleXR(self):
@@ -205,5 +240,5 @@ class ShatterUI (QtWidgets.QWidget):
     def GetMesh(self):
         Selected = cmds.ls(selection = True)
         if not Selected:
-            raise RuntimeError ("nothing is selected")
+            raise RuntimeError ("Nothing is selected")
         return Selected
