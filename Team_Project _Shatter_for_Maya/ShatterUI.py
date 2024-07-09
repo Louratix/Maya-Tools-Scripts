@@ -141,7 +141,7 @@ class ShatterUI (QtWidgets.QWidget):
             self.CutBtn.setDisabled(False)
             self.CutBtn.setStyleSheet("background-color: darkturquoise;")
             self.CopyBtn.setDisabled(False)
-            self.CutMesh = []
+            self.CutMesh = {}
 
             #cmds.createDisplayLayer(name = "Shatter")
 
@@ -160,6 +160,46 @@ class ShatterUI (QtWidgets.QWidget):
 
 
     def Copy(self):
+        selected = self.GetMesh()
+        print (selected)
+        for item in selected:
+            Poly = self.CutMesh[item]
+            translate_x = cmds.getAttr("%s.translateX" % item)
+            translate_y = cmds.getAttr("%s.translateY" % item)
+            translate_z = cmds.getAttr("%s.translateZ" % item)
+            if "Cube" in item:
+                SubdiW = cmds.getAttr("%s.subdivisionsWidth" % Poly)
+                SubdiD = cmds.getAttr("%s.subdivisionsDepth" % Poly)
+                SubdiH = cmds.getAttr("%s.subdivisionsHeight" % Poly)
+                Height = cmds.getAttr("%s.height" % Poly)
+
+                newCube = cmds.polyCube()
+                cmds.setAttr(newCube[0] + ".translateX", translate_x)
+                cmds.setAttr(newCube[0] + ".translateY", translate_y)
+                cmds.setAttr(newCube[0] + ".translateZ", translate_z)
+                cmds.setAttr(newCube[1] + ".subdivisionsWidth", SubdiW)
+                cmds.setAttr(newCube[1] + ".subdivisionsDepth", SubdiD)
+                cmds.setAttr(newCube[1] + ".subdivisionsHeight", SubdiH)
+                cmds.setAttr(newCube[1] + ".height", Height)
+                self.CutMesh[newCube[0]] = newCube[1]
+
+            elif "Sphere" in item:
+                SubdiH = cmds.getAttr("%s.subdivisionsHeight" % Poly)
+                SubdiA = cmds.getAttr("%s.subdivisionsAxis" % Poly)
+
+                newSphere = cmds.polySphere()
+                cmds.setAttr(newSphere[0] + ".translateX", translate_x)
+                cmds.setAttr(newSphere[0] + ".translateY", translate_y)
+                cmds.setAttr(newSphere[0] + ".translateZ", translate_z)
+                cmds.setAttr(newSphere[1] + ".subdivisionsHeight", SubdiH)
+                cmds.setAttr(newSphere[1] + ".subdivisionsAxis", SubdiA)
+                self.CutMesh[newSphere[0]] = newSphere[1]
+
+                cmds.polyExtrudeFacet (newSphere, tk = 0.01)
+                cmds.select(newSphere)
+
+
+
         print("test Copy")
 
     """Deletes Selected Cutting Meshes"""
@@ -169,9 +209,10 @@ class ShatterUI (QtWidgets.QWidget):
         for items in select:
             ToDelete = select[count]
             if ToDelete in self.CutMesh:
-                self.CutMesh.remove(ToDelete)
+                self.CutMesh.pop(ToDelete)
                 print(ToDelete + " is Deleted")
             count = count + 1
+        print (self.CutMesh)
         cmds.delete()
 
 
@@ -181,27 +222,24 @@ class ShatterUI (QtWidgets.QWidget):
 
     def Subdivise(self,Subdivisions):
         selected = cmds.ls(selection = True)
-        print(selected)
         selectedSTR = selected[0]
-        #cmds.polySubdivideFacet( selected, dv=Subdivisions )
+        Poly = self.CutMesh[selected[0]]
         if 'Cube' in selected[0]:
-            cmds.setAttr( "polyCube" + selectedSTR[-1] + ".subdivisionsWidth", Subdivisions)
-            cmds.setAttr( "polyCube" + selectedSTR[-1] + ".subdivisionsDepth", Subdivisions)
+            cmds.setAttr( Poly + ".subdivisionsWidth", Subdivisions)
+            cmds.setAttr( Poly + ".subdivisionsDepth", Subdivisions)
         else:
-            cmds.setAttr( "polySphere" + selectedSTR[-1] + ".subdivisionsHeight", Subdivisions)
+            cmds.setAttr( Poly + ".subdivisionsHeight", Subdivisions)
 
 
 
     """Add a plane to cut into the mesh"""
     def AddPlane(self):
         plane = cmds.polyCube( w=1,sx=1, sy=1, sz=1, h=0.01)
-        self.CutMesh.append(plane[0])
-        print (self.CutMesh)
+        self.CutMesh[plane[0]] = plane[1]
 
     def AddSphere(self):
         sphere = cmds.polySphere( sx=10, sy=10, r=1)
-        self.CutMesh.append(sphere[0])
-        print (self.CutMesh)
+        self.CutMesh[sphere[0]] = sphere[1]
         cmds.polyExtrudeFacet (sphere, tk = 0.01)
         cmds.select(sphere)
 
