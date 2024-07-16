@@ -78,9 +78,10 @@ class ShatterUI (QtWidgets.QWidget):
         layout.addWidget(self.ToggleXRBTN,2,3)
 
         self.DeformSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.DeformLabel = QtWidgets.QLabel("Deform Value 1")
-        self.DeformSlider.setMinimum(1)
-        self.DeformSlider.setMaximum(100)
+        self.DeformLabel = QtWidgets.QLabel("Deform Value 0")
+        self.DeformSlider.setMinimum(0)
+        self.DeformSlider.setMaximum(10)
+        self.DeformSlider.setSingleStep(2)
         layout.addWidget(self.DeformLabel,3,1)
         layout.addWidget(self.DeformSlider,3,2,1,2)
         self.DeformSlider.valueChanged.connect(self.update_Deform)
@@ -124,6 +125,7 @@ class ShatterUI (QtWidgets.QWidget):
     def update_Deform(self):
         value = self.DeformSlider.value()
         self.DeformLabel.setText(f"Deform Value: {value}")
+        self.Deform(value)
         
 
 
@@ -161,12 +163,17 @@ class ShatterUI (QtWidgets.QWidget):
 
     def Copy(self):
         selected = self.GetMesh()
-        print (selected)
         for item in selected:
             Poly = self.CutMesh[item]
             translate_x = cmds.getAttr("%s.translateX" % item)
             translate_y = cmds.getAttr("%s.translateY" % item)
             translate_z = cmds.getAttr("%s.translateZ" % item)
+            scale_x = cmds.getAttr("%s.scaleX" % item)
+            scale_y = cmds.getAttr("%s.scaleY" % item)
+            scale_z = cmds.getAttr("%s.scaleZ" % item)
+            rotate_x = cmds.getAttr("%s.rotateX" % item)
+            rotate_y = cmds.getAttr("%s.rotateY" % item)
+            rotate_z = cmds.getAttr("%s.rotateZ" % item)
             if "Cube" in item:
                 SubdiW = cmds.getAttr("%s.subdivisionsWidth" % Poly)
                 SubdiD = cmds.getAttr("%s.subdivisionsDepth" % Poly)
@@ -177,6 +184,12 @@ class ShatterUI (QtWidgets.QWidget):
                 cmds.setAttr(newCube[0] + ".translateX", translate_x)
                 cmds.setAttr(newCube[0] + ".translateY", translate_y)
                 cmds.setAttr(newCube[0] + ".translateZ", translate_z)
+                cmds.setAttr(newCube[0] + ".scaleX", scale_x)
+                cmds.setAttr(newCube[0] + ".scaleY", scale_y)
+                cmds.setAttr(newCube[0] + ".scaleZ", scale_z)
+                cmds.setAttr(newCube[0] + ".rotateX", rotate_x)
+                cmds.setAttr(newCube[0] + ".rotateY", rotate_y)
+                cmds.setAttr(newCube[0] + ".rotateZ", rotate_z)
                 cmds.setAttr(newCube[1] + ".subdivisionsWidth", SubdiW)
                 cmds.setAttr(newCube[1] + ".subdivisionsDepth", SubdiD)
                 cmds.setAttr(newCube[1] + ".subdivisionsHeight", SubdiH)
@@ -191,6 +204,12 @@ class ShatterUI (QtWidgets.QWidget):
                 cmds.setAttr(newSphere[0] + ".translateX", translate_x)
                 cmds.setAttr(newSphere[0] + ".translateY", translate_y)
                 cmds.setAttr(newSphere[0] + ".translateZ", translate_z)
+                cmds.setAttr(newSphere[0] + ".scaleX", scale_x)
+                cmds.setAttr(newSphere[0] + ".scaleY", scale_y)
+                cmds.setAttr(newSphere[0] + ".scaleZ", scale_z)
+                cmds.setAttr(newSphere[0] + ".rotateX", rotate_x)
+                cmds.setAttr(newSphere[0] + ".rotateY", rotate_y)
+                cmds.setAttr(newSphere[0] + ".rotateZ", rotate_z)
                 cmds.setAttr(newSphere[1] + ".subdivisionsHeight", SubdiH)
                 cmds.setAttr(newSphere[1] + ".subdivisionsAxis", SubdiA)
                 self.CutMesh[newSphere[0]] = newSphere[1]
@@ -198,9 +217,6 @@ class ShatterUI (QtWidgets.QWidget):
                 cmds.polyExtrudeFacet (newSphere, tk = 0.01)
                 cmds.select(newSphere)
 
-
-
-        print("test Copy")
 
     """Deletes Selected Cutting Meshes"""
     def Delete(self):
@@ -220,15 +236,29 @@ class ShatterUI (QtWidgets.QWidget):
         print('test')
     """add subdivision to selected Cutting Mesh"""
 
+    def Deform(self,Deformation):
+        sel = cmds.ls(sl=True, o=True)[0]
+        sel_vtx = cmds.ls('{}.vtx[:]'.format(sel), fl=True)
+        #cmds.move(0,Deformation,0, sel_vtx[0], r = True)
+        cmds.setAttr ("pCubeShape1.pnts[5].pnty", Deformation)
+        print (sel_vtx)
+        """for item in sel:
+            sel_vtx = cmds.ls('{}.vtx[:]'.format(sel), fl=True)
+            for vtx in sel_vtx:
+                cmds.move(0,Deformation,0, vtx)"""
+
+
     def Subdivise(self,Subdivisions):
-        selected = cmds.ls(selection = True)
-        selectedSTR = selected[0]
-        Poly = self.CutMesh[selected[0]]
-        if 'Cube' in selected[0]:
-            cmds.setAttr( Poly + ".subdivisionsWidth", Subdivisions)
-            cmds.setAttr( Poly + ".subdivisionsDepth", Subdivisions)
-        else:
-            cmds.setAttr( Poly + ".subdivisionsHeight", Subdivisions)
+        selected = self.GetMesh()
+        for item in selected:
+            Poly = self.CutMesh[item]
+            if 'Cube' in item:
+                cmds.setAttr( Poly + ".subdivisionsWidth", Subdivisions)
+                cmds.setAttr( Poly + ".subdivisionsDepth", Subdivisions)
+            else:
+                if Subdivisions < 4:
+                    return
+                cmds.setAttr( Poly + ".subdivisionsHeight", Subdivisions)
 
 
 
