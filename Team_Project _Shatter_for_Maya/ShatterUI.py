@@ -5,6 +5,8 @@ import Qt
 import logging
 import maya.cmds as cmds
 from maya import OpenMayaUI as omui
+import random
+import re
 
 logging.basicConfig()
 logger = logging.getLogger('Shatter Tool')
@@ -79,9 +81,9 @@ class ShatterUI (QtWidgets.QWidget):
 
         self.DeformSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.DeformLabel = QtWidgets.QLabel("Deform Value 0")
-        self.DeformSlider.setMinimum(0)
-        self.DeformSlider.setMaximum(10)
         self.DeformSlider.setSingleStep(2)
+        self.DeformSlider.setMinimum(0)
+        self.DeformSlider.setMaximum(5)
         layout.addWidget(self.DeformLabel,3,1)
         layout.addWidget(self.DeformSlider,3,2,1,2)
         self.DeformSlider.valueChanged.connect(self.update_Deform)
@@ -174,13 +176,13 @@ class ShatterUI (QtWidgets.QWidget):
             rotate_x = cmds.getAttr("%s.rotateX" % item)
             rotate_y = cmds.getAttr("%s.rotateY" % item)
             rotate_z = cmds.getAttr("%s.rotateZ" % item)
-            if "Cube" in item:
+            if "Plane" in item:
                 SubdiW = cmds.getAttr("%s.subdivisionsWidth" % Poly)
-                SubdiD = cmds.getAttr("%s.subdivisionsDepth" % Poly)
+                #SubdiD = cmds.getAttr("%s.subdivisionsDepth" % Poly)
                 SubdiH = cmds.getAttr("%s.subdivisionsHeight" % Poly)
                 Height = cmds.getAttr("%s.height" % Poly)
 
-                newCube = cmds.polyCube()
+                newCube = cmds.polyPlane()
                 cmds.setAttr(newCube[0] + ".translateX", translate_x)
                 cmds.setAttr(newCube[0] + ".translateY", translate_y)
                 cmds.setAttr(newCube[0] + ".translateZ", translate_z)
@@ -191,7 +193,7 @@ class ShatterUI (QtWidgets.QWidget):
                 cmds.setAttr(newCube[0] + ".rotateY", rotate_y)
                 cmds.setAttr(newCube[0] + ".rotateZ", rotate_z)
                 cmds.setAttr(newCube[1] + ".subdivisionsWidth", SubdiW)
-                cmds.setAttr(newCube[1] + ".subdivisionsDepth", SubdiD)
+                #cmds.setAttr(newCube[1] + ".subdivisionsDepth", SubdiD)
                 cmds.setAttr(newCube[1] + ".subdivisionsHeight", SubdiH)
                 cmds.setAttr(newCube[1] + ".height", Height)
                 self.CutMesh[newCube[0]] = newCube[1]
@@ -214,9 +216,6 @@ class ShatterUI (QtWidgets.QWidget):
                 cmds.setAttr(newSphere[1] + ".subdivisionsAxis", SubdiA)
                 self.CutMesh[newSphere[0]] = newSphere[1]
 
-                cmds.polyExtrudeFacet (newSphere, tk = 0.01)
-                cmds.select(newSphere)
-
 
     """Deletes Selected Cutting Meshes"""
     def Delete(self):
@@ -233,28 +232,38 @@ class ShatterUI (QtWidgets.QWidget):
 
 
     def cut(self):
-        print('test')
-    """add subdivision to selected Cutting Mesh"""
+        """add subdivision to selected Cutting Mesh"""
+        sel = self.GetMesh()
+        for item in sel:
+            cmds.polyExtrudeFacet (item, tk = 0.001)
+            
 
     def Deform(self,Deformation):
-        sel = cmds.ls(sl=True, o=True)[0]
-        sel_vtx = cmds.ls('{}.vtx[:]'.format(sel), fl=True)
-        #cmds.move(0,Deformation,0, sel_vtx[0], r = True)
-        cmds.setAttr ("pCubeShape1.pnts[5].pnty", Deformation)
-        print (sel_vtx)
-        """for item in sel:
-            sel_vtx = cmds.ls('{}.vtx[:]'.format(sel), fl=True)
-            for vtx in sel_vtx:
-                cmds.move(0,Deformation,0, vtx)"""
+        #Deformation = Deformation * 0.1
+        sel = cmds.ls(sl=True, o=True)
+        for item in sel:
+            NumVer = cmds.polyEvaluate( v=True)
+            Vertex = 0
+            itemSTR = self.CutMesh[item]
+            if "Plane" in item:
+                while Vertex < NumVer:
+                    cmds.setAttr ("pPlaneShape" + str(int(''.join(filter(str.isdigit, itemSTR)))) + ".pnts[" + str(Vertex) + "]" + ".pnty", random.randint(0, Deformation)*0.02)
+                    Vertex = Vertex + 2
+            elif "Sphere" in item:
+                while Vertex < NumVer:
+                    cmds.setAttr ("pSphereShape" + str(int(''.join(filter(str.isdigit, itemSTR)))) + ".pnts[" + str(Vertex) + "]" + ".pnty", random.randint(0, Deformation)*0.03)
+                    cmds.setAttr ("pSphereShape" + str(int(''.join(filter(str.isdigit, itemSTR)))) + ".pnts[" + str(Vertex) + "]" + ".pntx", random.randint(0, Deformation)*0.03)
+                    Vertex = Vertex + 2
+
 
 
     def Subdivise(self,Subdivisions):
         selected = self.GetMesh()
         for item in selected:
             Poly = self.CutMesh[item]
-            if 'Cube' in item:
+            if 'Plane' in item:
                 cmds.setAttr( Poly + ".subdivisionsWidth", Subdivisions)
-                cmds.setAttr( Poly + ".subdivisionsDepth", Subdivisions)
+                cmds.setAttr( Poly + ".subdivisionsHeight", Subdivisions)
             else:
                 if Subdivisions < 4:
                     return
@@ -264,14 +273,13 @@ class ShatterUI (QtWidgets.QWidget):
 
     """Add a plane to cut into the mesh"""
     def AddPlane(self):
-        plane = cmds.polyCube( w=1,sx=1, sy=1, sz=1, h=0.01)
+        plane = cmds.polyPlane( w=1,sx=1, sy=1, h=1)
         self.CutMesh[plane[0]] = plane[1]
 
     def AddSphere(self):
         sphere = cmds.polySphere( sx=10, sy=10, r=1)
         self.CutMesh[sphere[0]] = sphere[1]
-        cmds.polyExtrudeFacet (sphere, tk = 0.01)
-        cmds.select(sphere)
+    
 
 
     """Toggles XR View ON or OFF"""
