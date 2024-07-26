@@ -133,7 +133,7 @@ class ShatterUI (QtWidgets.QWidget):
 
     def toggle(self):       
         if self.StartStopBtn.isChecked():
-            ToShatter = self.GetMesh()
+            self.ToShatter = self.GetMesh()
             self.StartStopBtn.setText("STOP")
             self.StartStopBtn.setStyleSheet("QPushButton:checked {background-color: red; border: red;  min-height: 1.8em;}")
             self.CenterBtn.setDisabled(True)
@@ -161,6 +161,7 @@ class ShatterUI (QtWidgets.QWidget):
             self.CutBtn.setStyleSheet("QPushButton:Disabled {background-color: darkslategrey; color: grey}")
             self.CutBtn.setDisabled(True)
             self.CopyBtn.setDisabled(True)
+            cmds.polySeparate( self.ToShatter )
 
 
     def Copy(self):
@@ -234,8 +235,14 @@ class ShatterUI (QtWidgets.QWidget):
     def cut(self):
         """add subdivision to selected Cutting Mesh"""
         sel = self.GetMesh()
+        ShatterList = []
         for item in sel:
             cmds.polyExtrudeFacet (item, tk = 0.001)
+            if item in self.CutMesh:
+                ShatterList.append(item)
+        CutMesh = cmds.polyCBoolOp( self.ToShatter, ShatterList, op=2, n=str(self.ToShatter))
+        self.ToShatter = CutMesh[0]
+        cmds.delete(self.ToShatter,constructionHistory = True)  
             
 
     def Deform(self,Deformation):
