@@ -1,34 +1,45 @@
 from asyncio.windows_events import NULL
-from queue import Empty
-from Qt import QtWidgets, QtCore, QtGui
-import Qt
 import logging
 import maya.cmds as cmds
 from maya import OpenMayaUI as omui
 import random
-import re
+
+Version = cmds.about(version=True) 
 
 logging.basicConfig()
 logger = logging.getLogger('Shatter Tool')
 logger.setLevel(logging.DEBUG)
 
-if Qt.__binding__ == 'Pyside':
-    logger.debug('Using Pyside with shiboken')
-    from shiboken import wrapInstance
-    from Qt.QtCore import Signal
-elif Qt.__binding__.startswith('PyQt'):
-    logger.debug('Using PyQt with Sip')
-    from sip import wrapinstance as wrapInstance
-    from Qt.QtCore import pyqtSignal as Signal
+if int(Version) < 2025:
+    import Qt
+    from Qt import QtWidgets, QtCore, QtGui
+    if Qt.__binding__ == 'Pyside':
+        logger.debug('Using Pyside with shiboken')
+        from shiboken import wrapInstance
+        from Qt.QtCore import Signal
+    elif Qt.__binding__.startswith('PyQt'):
+        logger.debug('Using PyQt with Sip')
+        from sip import wrapinstance as wrapInstance
+        from Qt.QtCore import pyqtSignal as Signal
+    else:
+        logger.debug('Using Pyside2 with shiboken')
+        from shiboken2 import wrapInstance
+        from Qt.QtCore import Signal
 else:
-    logger.debug('Using Pyside2 with shiboken')
-    from shiboken2 import wrapInstance
-    from Qt.QtCore import Signal
+    from PySide6.QtCore import Qt
+    from PySide6 import QtCore, QtWidgets, QtGui
+    from shiboken6 import wrapInstance
+    from PySide6.QtCore import Signal
 
 def getMayaMainWindow():
-    win = omui.MQtUtil_mainWindow()
-    ptr = wrapInstance(int(win), QtWidgets.QMainWindow)
-    return ptr
+    if int(Version) < 2025:
+        win = omui.MQtUtil_mainWindow()
+        ptr = wrapInstance(int(win), QtWidgets.QMainWindow)
+        return ptr
+    else:
+        win = omui.MQtUtil.mainWindow()
+        ptr = wrapInstance(int(win), QtWidgets.QMainWindow)
+        return ptr
 
 
 class ShatterUI (QtWidgets.QWidget):
