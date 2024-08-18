@@ -1,7 +1,7 @@
 from asyncio.windows_events import NULL
 import logging
-import maya.cmds as cmds
-from maya import OpenMayaUI as omui
+import maya.cmds as cmds # type: ignore
+from maya import OpenMayaUI as omui # type: ignore
 import random
 
 Version = cmds.about(version=True) 
@@ -15,21 +15,22 @@ if int(Version) < 2025:
     from Qt import QtWidgets, QtCore, QtGui
     if Qt.__binding__ == 'Pyside':
         logger.debug('Using Pyside with shiboken')
-        from shiboken import wrapInstance
-        from Qt.QtCore import Signal
+        from shiboken import wrapInstance # type: ignore
+        from Qt.QtCore import Signal # type: ignore
     elif Qt.__binding__.startswith('PyQt'):
         logger.debug('Using PyQt with Sip')
-        from sip import wrapinstance as wrapInstance
-        from Qt.QtCore import pyqtSignal as Signal
+        from sip import wrapinstance as wrapInstance # type: ignore
+        from Qt.QtCore import pyqtSignal as Signal # type: ignore
     else:
-        logger.debug('Using Pyside2 with shiboken')
-        from shiboken2 import wrapInstance
-        from Qt.QtCore import Signal
+        logger.debug('Using Pyside2 with shiboken2')
+        from shiboken2 import wrapInstance # type: ignore
+        from Qt.QtCore import Signal # type: ignore
 else:
-    from PySide6.QtCore import Qt
-    from PySide6 import QtCore, QtWidgets, QtGui
-    from shiboken6 import wrapInstance
-    from PySide6.QtCore import Signal
+    logger.debug('Using Pyside6 with shiboken6')
+    from PySide6.QtCore import Qt # type: ignore
+    from PySide6 import QtCore, QtWidgets, QtGui # type: ignore
+    from shiboken6 import wrapInstance # type: ignore
+    from PySide6.QtCore import Signal # type: ignore
 
 def getMayaMainWindow():
     if int(Version) < 2025:
@@ -177,6 +178,7 @@ class ShatterUI (QtWidgets.QWidget):
 
     def Copy(self):
         selected = self.GetMesh()
+        NewlyCopied = []
         for item in selected:
             Poly = self.CutMesh[item]
             translate_x = cmds.getAttr("%s.translateX" % item)
@@ -209,6 +211,7 @@ class ShatterUI (QtWidgets.QWidget):
                 cmds.setAttr(newCube[1] + ".subdivisionsHeight", SubdiH)
                 cmds.setAttr(newCube[1] + ".height", Height)
                 self.CutMesh[newCube[0]] = newCube[1]
+                NewlyCopied.append(newCube[0])
 
             elif "Sphere" in item:
                 SubdiH = cmds.getAttr("%s.subdivisionsHeight" % Poly)
@@ -227,6 +230,9 @@ class ShatterUI (QtWidgets.QWidget):
                 cmds.setAttr(newSphere[1] + ".subdivisionsHeight", SubdiH)
                 cmds.setAttr(newSphere[1] + ".subdivisionsAxis", SubdiA)
                 self.CutMesh[newSphere[0]] = newSphere[1]
+                NewlyCopied.append(newSphere[0])
+        print (NewlyCopied)
+        cmds.select(NewlyCopied)
 
 
     """Deletes Selected Cutting Meshes"""
