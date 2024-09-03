@@ -86,26 +86,29 @@ class VoronoiShatterUI (QtWidgets.QWidget):
 
     def Start(self):
         #value = self.ChunksSlider.value()
-        print ("hello")
         ToCut = self.GetMesh()
-        BoundingBox = cmds.exactWorldBoundingBox()
-        print (BoundingBox)
+        BoundingBox = cmds.exactWorldBoundingBox(ToCut)
 
         PointsCount = self.ChunksSlider.value()
         VoroX = [random.uniform(BoundingBox[0], BoundingBox[3]) for i in range(PointsCount)]
         VoroY = [random.uniform(BoundingBox[1], BoundingBox[4]) for i in range(PointsCount)]
         VoroZ = [random.uniform(BoundingBox[2], BoundingBox[5]) for i in range(PointsCount)]
-        VoroCenter = zip(VoroX,VoroY,VoroZ)
-
-        for Voro in VoroCenter:
-            angleX = random.uniform(0, 180)
-            angleY = random.uniform(0, 180)
-            angleZ = random.uniform(0, 180)
-            randAng = (angleX, angleY, angleZ)
-            cmds.polyCut(ToCut, ef = True, df = False, eo = [0,0,0], pc = Voro, ro = randAng)
-            cmds.polyCloseBorder(ToCut)
+        voroPoints = zip(VoroX,VoroY,VoroZ)
         
-        cmds.polySeparate(ToCut)
+        for ToCopies in voroPoints:
+            Copies = cmds.duplicate(ToCut)
+            print ("Duplicate is working")
+            for VoroCut in zip(VoroX,VoroY,VoroZ):
+                print ("passed")
+                if ToCopies != VoroCut:
+                    aim = [(vec1 - vec2) for  (vec1, vec2) in zip(ToCopies, VoroCut)]
+                    VoroCenter = [(vec1 + vec2)/2 for (vec1, vec2) in zip(VoroCut, ToCopies)]
+                    planeAngle = cmds.angleBetween (euler = True, v1 = [0,0,1], v2 = aim)
+
+                    cmds.polyCut(Copies[0], df = True, cutPlaneCenter = VoroCenter, cutPlaneRotate = planeAngle)
+                    
+                
+
 
 
     def GetMesh(self):
