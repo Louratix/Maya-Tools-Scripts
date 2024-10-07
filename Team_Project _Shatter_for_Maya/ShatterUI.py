@@ -254,7 +254,7 @@ class ShatterUI (QtWidgets.QWidget):
         sel = self.GetMesh()
         ShatterList = []
         for item in sel:
-            cmds.polyExtrudeFacet (item, tk = 0.001)
+            cmds.polyExtrudeFacet (item, tk = 0.005)
             if item in self.CutMesh:
                 ShatterList.append(item)
         CutMesh = cmds.polyCBoolOp( self.ToShatter, ShatterList, op=2, n=str(self.ToShatter))
