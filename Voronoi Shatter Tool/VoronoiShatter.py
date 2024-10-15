@@ -125,31 +125,94 @@ class VoronoiShatterUI (QtWidgets.QWidget):
         VoroZ = [random.uniform(BoundingBox[2], BoundingBox[5]) for i in range(PointsCount)]
         voroPoints = zip(VoroX,VoroY,VoroZ)
 
-        cmds.setAttr(str(ToCut) + '.visibility', 0)
-        chunksGrp = cmds.group(em = True, name = ToCut + '_Chunks_1')
-        
-        for ToCopies in voroPoints:
-            Copies = cmds.duplicate(ToCut)
-            cmds.setAttr(str(Copies[0]) + '.visibility', 1)
-            cmds.parent(Copies, chunksGrp)
+        cmds.setAttr(str(*ToCut) + '.visibility', 0)
+        chunksGrp = cmds.group(em = True, name = str(*ToCut) + '_Chunks_1')
 
-            for VoroCut in zip(VoroX,VoroY,VoroZ):
-                if ToCopies != VoroCut:
-                    aim = [(vec1 - vec2) for  (vec1, vec2) in zip(ToCopies, VoroCut)]
-                    VoroCenter = [(vec1 + vec2)/2 for (vec1, vec2) in zip(VoroCut, ToCopies)]
-                    planeAngle = cmds.angleBetween (euler = True, v1 = [0,0,1], v2 = aim)
-                    cmds.polyCut(Copies[0], df = True, cutPlaneCenter = VoroCenter, cutPlaneRotate = planeAngle)
+        cmds.progressWindow(title = "Shattering the Mesh", progress = 0, status = "Working...", isInterruptable = True, maxValue = PointsCount)
+        cmds.undoInfo(state = False)
+        step = 0
 
-                    oriFaces = cmds.polyEvaluate(Copies[0], face = True)
-                    cmds.polyCloseBorder(Copies[0], ch = False)
-                    aftFaces = cmds.polyEvaluate(Copies[0], face = True)
-                    newFaces = aftFaces - oriFaces
+        if (self.CheckFillHole.isChecked() == True and self.SelectTexture.currentText() == "Default"):
+            for ToCopies in voroPoints:
+                if cmds.progressWindow(q = True, isCancelled = True) : break
+                if cmds.progressWindow(q = True, progress = True) >= PointsCount : break
+                step = step + 1
 
-                    cutFaces = ('%s.f[%d]' % (Copies[0], (aftFaces + newFaces - 1)))
-                    mat = self.SelectTexture.currentText()
-                    shading_engine = cmds.sets(empty=True, renderable=True, noSurfaceShader=True, name="{}SG".format(mat))
-                    cmds.defaultNavigation(connectToExisting=True, source=mat, destination=shading_engine, f=True)
-                    cmds.sets(cutFaces, forceElement = shading_engine, e = True)
+                cmds.progressWindow(edit = True, progress = step, status = "Shattering step %d of %d completed" % (step, PointsCount))
+                cmds.refresh()
+
+                Copies = cmds.duplicate(ToCut)
+                cmds.setAttr(str(Copies[0]) + '.visibility', 1)
+                cmds.parent(Copies, chunksGrp)
+
+                for VoroCut in zip(VoroX,VoroY,VoroZ):
+                    if ToCopies != VoroCut:
+                        aim = [(vec1 - vec2) for  (vec1, vec2) in zip(ToCopies, VoroCut)]
+                        VoroCenter = [(vec1 + vec2)/2 for (vec1, vec2) in zip(VoroCut, ToCopies)]
+                        planeAngle = cmds.angleBetween (euler = True, v1 = [0,0,1], v2 = aim)
+                        cmds.polyCut(Copies[0], df = True, cutPlaneCenter = VoroCenter, cutPlaneRotate = planeAngle)
+
+                        oriFaces = cmds.polyEvaluate(Copies[0], face = True)
+                        cmds.polyCloseBorder(Copies[0], ch = False)
+            cmds.progressWindow(endProgress = 1)
+            cmds.undoInfo(state = True)
+
+        elif (self.CheckFillHole.isChecked() == True):
+            for ToCopies in voroPoints:
+                if cmds.progressWindow(q = True, isCancelled = True) : break
+                if cmds.progressWindow(q = True, progress = True) >= PointsCount : break
+                step = step + 1
+
+                cmds.progressWindow(edit = True, progress = step, status = "Shattering step %d of %d completed" % (step, PointsCount))
+                cmds.refresh()
+
+                Copies = cmds.duplicate(ToCut)
+                cmds.setAttr(str(Copies[0]) + '.visibility', 1)
+                cmds.parent(Copies, chunksGrp)
+
+                for VoroCut in zip(VoroX,VoroY,VoroZ):
+                    if ToCopies != VoroCut:
+                        aim = [(vec1 - vec2) for  (vec1, vec2) in zip(ToCopies, VoroCut)]
+                        VoroCenter = [(vec1 + vec2)/2 for (vec1, vec2) in zip(VoroCut, ToCopies)]
+                        planeAngle = cmds.angleBetween (euler = True, v1 = [0,0,1], v2 = aim)
+                        cmds.polyCut(Copies[0], df = True, cutPlaneCenter = VoroCenter, cutPlaneRotate = planeAngle)
+
+                        oriFaces = cmds.polyEvaluate(Copies[0], face = True)
+                        cmds.polyCloseBorder(Copies[0], ch = False)
+                        aftFaces = cmds.polyEvaluate(Copies[0], face = True)
+                        newFaces = aftFaces - oriFaces
+
+                        cutFaces = ('%s.f[%d]' % (Copies[0], (aftFaces + newFaces - 1)))
+                        mat = self.SelectTexture.currentText()
+                        shading_engine = cmds.sets(empty=True, renderable=True, noSurfaceShader=True, name="{}SG".format(mat))
+                        cmds.defaultNavigation(connectToExisting=True, source=mat, destination=shading_engine, f=True)
+                        cmds.sets(cutFaces, forceElement = shading_engine, e = True)
+            cmds.progressWindow(endProgress = 1)
+            cmds.undoInfo(state = True)
+
+        else:
+            for ToCopies in voroPoints:
+                if cmds.progressWindow(q = True, isCancelled = True) : break
+                if cmds.progressWindow(q = True, progress = True) >= PointsCount : break
+                step = step + 1
+
+                cmds.progressWindow(edit = True, progress = step, status = "Shattering step %d of %d completed" % (step, PointsCount))
+                cmds.refresh()
+
+                Copies = cmds.duplicate(ToCut)
+                cmds.setAttr(str(Copies[0]) + '.visibility', 1)
+                cmds.parent(Copies, chunksGrp)
+
+                for VoroCut in zip(VoroX,VoroY,VoroZ):
+                    if ToCopies != VoroCut:
+                        aim = [(vec1 - vec2) for  (vec1, vec2) in zip(ToCopies, VoroCut)]
+                        VoroCenter = [(vec1 + vec2)/2 for (vec1, vec2) in zip(VoroCut, ToCopies)]
+                        planeAngle = cmds.angleBetween (euler = True, v1 = [0,0,1], v2 = aim)
+                        cmds.polyCut(Copies[0], df = True, cutPlaneCenter = VoroCenter, cutPlaneRotate = planeAngle)
+
+                        oriFaces = cmds.polyEvaluate(Copies[0], face = True)
+            cmds.progressWindow(endProgress = 1)
+            cmds.undoInfo(state = True)
                 
     def selectTexture(self):
         """
@@ -158,16 +221,13 @@ class VoronoiShatterUI (QtWidgets.QWidget):
         scene_materials=[]
         all_sgs=cmds.ls(type='shadingEngine')
         for sg in all_sgs:
-            # if an sg has 'sets' members, it is used in the scene
-            if cmds.sets(sg, q=True):
-                materials = cmds.listConnections('{}.surfaceShader'.format(sg))
-                if materials:
-                    scene_materials.extend(materials)
+            materials = cmds.listConnections('{}.surfaceShader'.format(sg))
+            if materials:
+                scene_materials.extend(materials)
         return (list(set(scene_materials)))
     
     def SetIcon(self):
         Material = self.SelectTexture.currentText()
-        print (Material)
         tempwin = cmds.window()
         cmds.columnLayout('r')
         port = cmds.swatchDisplayPort(rs=65, wh=(64, 64), sn=Material)
@@ -182,7 +242,7 @@ class VoronoiShatterUI (QtWidgets.QWidget):
         self.layout.addWidget(qport,2,2)
         cmds.deleteUI(tempwin)
         widget.show()
-
+        
     def GetMesh(self):
         """
         Return selected Meshes, Checks if nothing is selected
