@@ -114,6 +114,7 @@ class VoronoiShatterUI (QtWidgets.QWidget):
         self.ChunkLabel.setText(f"Subdiv Value: {value}")
         #self.Subdivise(value)
 
+    """This was made following a Tutorial from oceanqiu : https://oceanqiu.wordpress.com/2016/04/21/maya-python-how-to-create-a-voronoi-shatter-plug-in-by-only-scripting-1/"""
     def Start(self):
         #value = self.ChunksSlider.value()
         ToCut = self.GetMesh()
